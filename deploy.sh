@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Push this folder to a PRIVATE GitHub repo and publish the image ghcr.io/<owner>/a-share-watch:latest.
+# Push this folder to a GitHub repo (public by default) and publish the image ghcr.io/<owner>/a-share-watch:latest.
 #   Needs only:  GH_TOKEN=<GitHub classic PAT with scopes: repo, workflow, write:packages>  ./deploy.sh
-# Optional env: REPO_NAME (default a-share-watch)
+# Optional env: REPO_NAME (default a-share-watch), VISIBILITY public|private (default public: repo holds no token or personal data)
 # After it finishes:
 #   - ClawCloud Run (primary): image is pulled from GHCR (private -> give ClawCloud a read:packages token, see DEPLOY.md)
 #   - Render (backup): connect the repo once in the Render dashboard (Blueprint render.yaml); later pushes auto-deploy.
@@ -15,7 +15,7 @@ OWNER=$(gh api user -q .login)
 OWNER_LC=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
 IMG=ghcr.io/$OWNER_LC/$REPO_NAME
 echo "GitHub user: $OWNER"
-gh repo view "$OWNER/$REPO_NAME" >/dev/null 2>&1 || gh repo create "$OWNER/$REPO_NAME" --private -d "A股盯盘 (cloud deploy)" >/dev/null
+gh repo view "$OWNER/$REPO_NAME" >/dev/null 2>&1 || gh repo create "$OWNER/$REPO_NAME" --${VISIBILITY:-public} -d "A股盯盘 (cloud deploy)" >/dev/null
 [ -d .git ] || git init -q -b main
 git add -A
 git -c user.name="$OWNER" -c user.email="$OWNER@users.noreply.github.com" commit -qm "deploy $(date +%F_%T)" || true
