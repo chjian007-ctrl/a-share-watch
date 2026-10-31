@@ -1,0 +1,23 @@
+# Builds the Docker image on every push to main and publishes ghcr.io/<owner>/a-share-watch:latest (for ClawCloud Run).
+name: build-image
+on:
+  push: { branches: [main] }
+  workflow_dispatch:
+permissions: { contents: read, packages: write }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - id: n
+        run: echo "img=ghcr.io/$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')/a-share-watch" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.n.outputs.img }}:latest,${{ steps.n.outputs.img }}:${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.title=a-share-watch

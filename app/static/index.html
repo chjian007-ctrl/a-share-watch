@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="A股盯盘">
+<link rel="apple-touch-icon" href="/icon.png">
+<link rel="manifest" id="mf" crossorigin="use-credentials">
+<title>A股盯盘</title>
+<style>
+:root{--bg:#0b0f14;--card:#151b24;--card2:#1c2430;--line:#2a3545;--tx:#e8eef5;--mut:#8b98a8;--up:#ff4d4f;--dn:#1fbf6a;--acc:#4ea1ff;--warn:#f5a524;--yes:#ff6b6b;--hold:#8b98a8}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;overscroll-behavior-y:contain}
+header{position:sticky;top:0;z-index:8;background:rgba(11,15,20,.97);backdrop-filter:blur(8px);padding:calc(env(safe-area-inset-top) + 8px) 12px 8px;border-bottom:1px solid var(--line)}
+header .top{display:flex;justify-content:space-between;align-items:center}
+header h1{font-size:17px;margin:0;letter-spacing:.5px}
+#hdr-r{font-size:11px;color:var(--mut);text-align:right;line-height:1.3}
+#sticky{margin-top:8px;display:none}
+#sticky .line{font-size:13px;font-weight:600;line-height:1.35}
+#sticky .sub{font-size:11px;color:var(--mut);margin-top:2px}
+main{padding:10px 10px 0;min-height:60vh}
+nav{position:fixed;bottom:0;left:0;right:0;z-index:10;display:flex;background:#0e141c;border-top:1px solid var(--line);padding:4px 0 calc(env(safe-area-inset-bottom) + 4px);box-shadow:0 -4px 20px rgba(0,0,0,.35)}
+nav button{flex:1;background:none;border:0;color:var(--mut);font-size:11px;padding:8px 0;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:500}
+nav button b{font-size:20px;font-weight:700;line-height:1}
+nav button.on{color:var(--acc)}
+.card{background:var(--card);border-radius:14px;padding:12px;margin-bottom:10px}
+.card h2{font-size:15px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.meta{font-size:11px;color:var(--mut);margin-top:8px;word-break:break-all;line-height:1.4}
+.meta.err{color:var(--warn)}
+.up{color:var(--up)}.dn{color:var(--dn)}.mut{color:var(--mut)}
+.big{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.num{font-variant-numeric:tabular-nums}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.kv{background:var(--card2);border-radius:10px;padding:10px 8px}
+.kv .k{font-size:11px;color:var(--mut)}.kv .v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--mut);font-weight:500;text-align:right;padding:6px 3px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{text-align:right;padding:8px 3px;border-bottom:1px solid #1d2632;font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}
+td .n{font-size:14px;font-weight:700}td .c{font-size:11px;color:var(--mut);white-space:normal}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tag{display:inline-block;font-size:11px;padding:2px 7px;border-radius:6px;background:#263142;color:var(--tx);margin:2px 3px 2px 0;font-weight:600}
+.t-w2s,.t-yes{background:#3a1a1b;color:#ff8a8c}.t-watch{background:#3b2f12;color:#f5c451}
+.t-fqzy,.t-hold{background:#12303a;color:#6cc7e8}.t-weak,.t-no{background:#252b35;color:#aab}.t-na{background:#252b35;color:#889}
+.tier{font-size:32px;font-weight:900;letter-spacing:1px;line-height:1.15}
+.crit{font-size:13px;padding:5px 0;display:flex;justify-content:space-between;gap:8px;border-bottom:1px dashed #263142}
+.ok{color:var(--up)}.no{color:var(--mut)}
+input,select{background:var(--card2);color:var(--tx);border:1px solid var(--line);border-radius:10px;padding:11px;font-size:16px;width:100%;min-height:44px}
+.btn{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:12px 14px;font-size:15px;font-weight:700;min-height:44px;white-space:nowrap}
+.btn.sec{background:#263142}.btn.sm{padding:8px 12px;font-size:13px;min-height:36px}
+.row{display:flex;gap:8px;align-items:center}
+.stock{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:12px 2px;border-bottom:1px solid #1d2632}
+.stock:last-child{border-bottom:0}
+.stock .nm{font-size:16px;font-weight:800}.stock .sub{font-size:12px;color:var(--mut)}
+.stock .px{text-align:right}
+.ev{display:flex;gap:8px;padding:8px 0;border-bottom:1px solid #1d2632;font-size:13px}
+.ev .t{color:var(--mut);width:44px;flex:none;font-variant-numeric:tabular-nums}
+.lad{display:flex;gap:8px;padding:10px 0;border-bottom:1px solid #1d2632}
+.lad .b{flex:none;width:52px;font-weight:900;font-size:18px;color:var(--up)}
+.lad .s{display:flex;flex-wrap:wrap;gap:5px}
+.chip{background:var(--card2);border-radius:8px;padding:4px 8px;font-size:12px}
+.seg{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.seg button{background:var(--card2);border:1px solid var(--line);color:var(--tx);border-radius:18px;padding:8px 12px;font-size:13px;font-weight:600;min-height:36px}
+.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.note{font-size:12px;color:var(--warn);background:#2a2210;border-radius:10px;padding:9px 10px;margin-bottom:8px;line-height:1.4}
+.banner{font-size:14px;font-weight:800;background:#4a1515;border:1px solid var(--up);color:#ffb3b3;border-radius:12px;padding:12px;margin-bottom:10px;line-height:1.35}
+.banner.warn{background:#2a2210;border-color:var(--warn);color:#f5c451}
+.one{background:linear-gradient(135deg,#1a2330,#151b24);border:1px solid #2e3d52;border-radius:12px;padding:12px;margin-bottom:10px}
+.one .t{font-size:15px;font-weight:800;line-height:1.35}
+.one .p{font-size:12px;color:var(--mut);margin-top:4px}
+.acard{background:var(--card2);border-radius:12px;padding:12px;margin-bottom:8px;border-left:3px solid #334}
+.acard.yes{border-left-color:var(--up)}.acard.watch{border-left-color:var(--warn)}.acard.hold{border-left-color:#4a90a4}.acard.no{border-left-color:#555}.acard.na{border-left-color:#333}
+.acard .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.acard .name{font-size:16px;font-weight:800}
+.acard .pct{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums}
+.acard .grid2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}
+.acard .cell .k{font-size:10px;color:var(--mut)}.acard .cell .v{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.acard .reason{font-size:12px;color:var(--mut);margin-top:8px;line-height:1.35}
+.empty{text-align:center;color:var(--mut);padding:28px 12px;font-size:14px}
+.loading{text-align:center;color:var(--mut);padding:40px 12px}
+.pull{text-align:center;color:var(--mut);font-size:12px;padding:6px 0 2px;opacity:.7}
+footer{text-align:center;color:var(--mut);font-size:12px;padding:12px 0 calc(72px + env(safe-area-inset-bottom))}
+#toast{position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top) + 54px);z-index:12;display:none;background:#3a1a1b;border:1px solid var(--up);border-radius:10px;padding:12px;font-size:14px}
+details summary{cursor:pointer;color:var(--acc);font-size:13px;padding:6px 0;font-weight:600;min-height:36px;list-style:none}
+details summary::-webkit-details-marker{display:none}
+.more{display:block;width:100%;margin-top:8px}
+</style></head>
+<body>
+<header>
+  <div class="top"><h1>A股盯盘</h1><div id="hdr-r">—</div></div>
+  <div id="sticky"></div>
+</header>
+<div id="toast"></div>
+<main id="main"><div class="loading">加载中…</div></main>
+<footer>仅供参考，不构成投资建议 · 非 Level-2 行情</footer>
+<nav id="nav"></nav>
+<script>
+const TABS=[["watch","自","自选"],["alerts","铃","提醒"],["limit","板","涨停"],["auction","竞","竞价"],["sent","情","情绪"]];
+const u=new URL(location.href); let TK=u.searchParams.get('t'); if(TK) localStorage.setItem('asw_t',TK); else TK=localStorage.getItem('asw_t')||'';
+document.getElementById('mf').href='/manifest.webmanifest?t='+encodeURIComponent(TK);
+let TAB=(location.hash||'#watch').slice(1); if(!TABS.find(t=>t[0]==TAB)) TAB='watch';
+const $=s=>document.querySelector(s);
+const NA='<span class="mut">未取到</span>';
+function f(v,d=2,suf=''){return (v===null||v===undefined||Number.isNaN(v))?NA:(typeof v==='number'?v.toFixed(d):v)+suf}
+function cls(v){return v>0?'up':(v<0?'dn':'')}
+function pct(v){return (v===null||v===undefined)?NA:`<span class="${cls(v)}">${v>0?'+':''}${Number(v).toFixed(2)}%</span>`}
+function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+function hm(s){return s&&s.length>=6?s.slice(0,2)+':'+s.slice(2,4)+':'+s.slice(4,6):(s||'')}
+function meta(m,extra=''){ if(!m) return '';
+  let s=`<div class="meta">来源：${esc(m.source||'—')}<br>拉取时间：${esc(m.fetched_at||'—')}（北京时间）${extra||''}</div>`;
+  if(m.error) s+=`<div class="meta err">最近一次拉取失败（${esc(m.error_at||'')}）：${esc(m.error)}${m.fetched_at?'；显示的是上次成功的数据':''}</div>`;
+  return s;}
+async function api(path,opt={}){opt.headers=Object.assign({'X-Token':TK,'Content-Type':'application/json'},opt.headers||{});
+  const r=await fetch(path,opt); if(!r.ok){let t=await r.text();try{t=JSON.parse(t).detail||t}catch(e){} throw new Error(t)} return r.json();}
+function nav(){ $('#nav').innerHTML=TABS.map(t=>`<button class="${t[0]==TAB?'on':''}" onclick="go('${t[0]}')"><b>${t[1]}</b>${t[2]}</button>`).join('');}
+function go(t){TAB=t;location.hash=t;nav();render(true);window.scrollTo(0,0)}
+let busy=false, stickyCache='';
+function setSticky(html){ stickyCache=html||''; const el=$('#sticky'); if(html){el.style.display='block';el.innerHTML=html} else {el.style.display='none';el.innerHTML=''} }
+async function render(force){ if(busy&&!force) return; busy=true;
+  try{ await ({watch:rWatch,alerts:rAlerts,limit:rLimit,auction:rAuction,sent:rSent})[TAB](); }
+  catch(e){ setSticky(''); $('#main').innerHTML=`<div class="card"><div class="empty">加载失败：${esc(e.message)}</div></div>`; }
+  busy=false;}
+
+/* ---------- 自选 ---------- */
+async function rWatch(){
+  const d=await api('/api/watch');
+  setSticky(`<div class="line">${esc(d.phase_cn)} · 自选 ${d.items.length} 只</div><div class="sub">行情拉取 ${esc((d.spot&&d.spot.fetched_at)||'—')} · 下拉可刷新</div>`);
+  let h=`<div class="pull">↓ 下拉刷新</div><div class="card"><h2>自选股</h2>`;
+  if(!d.items.length) h+=`<div class="empty">暂无自选，下方添加 6 位代码</div>`;
+  for(const it of d.items){ const q=it.q;
+    h+=`<div class="stock"><div><span class="nm">${esc(q?q.name:it.name)}</span> <span class="sub">${it.code} · ${esc(it.board)}</span>
+      ${q&&q.at_zt?'<span class="tag t-w2s">涨停</span>':''}${q&&q.at_dt?'<span class="tag" style="background:#12301f;color:#5fe29a">跌停</span>':''}
+      <div class="sub">量比 ${q?f(q.vol_ratio):NA} · 换手 ${q?f(q.turnover_pct,2,'%'):NA} · 额 ${q?f(q.amount_yi,2,'亿'):NA}</div>
+      <div class="sub">涨停 ${q?f(q.limit_up):NA} · 跌停 ${q?f(q.limit_down):NA} · 开${q?f(q.open):NA} 高${q?f(q.high):NA} 低${q?f(q.low):NA}</div>
+      <div class="sub">行情时间 ${q?esc(q.time):NA}</div></div>
+      <div class="px"><div class="big ${q?cls(q.pct):''}">${q?f(q.price):NA}</div><div class="num" style="font-size:15px;font-weight:700">${q?pct(q.pct):''}</div>
+      <button class="btn sec sm" style="margin-top:6px" onclick="delW('${it.code}')">移除</button></div></div>`;}
+  h+=`<div class="row" style="margin-top:12px"><input id="wcode" inputmode="numeric" maxlength="6" placeholder="输入6位代码添加自选"><button class="btn" onclick="addW()">添加</button></div>
+     <div class="meta">自选与 watchlist.md 同步</div>${meta(d.spot)}</div>`;
+  h+=`<div class="card"><h2>自选异动 <span class="mut" style="font-size:12px">${d.events_day}${d.events.length&&d.events[0].src=='replay'?' · 回放':''}</span></h2>`;
+  h+=d.events.length?d.events.slice(0,40).map(e=>`<div class="ev"><span class="t">${esc(e.time)}</span><div><b>${esc(e.name)}</b> <span class="tag ${/涨|放量/.test(e.kind)&&!/开板|跌/.test(e.kind)?'t-w2s':'t-fqzy'}">${esc(e.kind)}</span><div class="mut">${esc(e.detail)}</div></div></div>`).join('')+(d.events.length>40?`<button class="btn sec more" onclick="this.previousSibling">共 ${d.events.length} 条</button>`:''):`<div class="empty">暂无异动</div>`;
+  h+=`<div class="meta">规则：5分钟涨跌≥2%；分钟量≥前20分钟均量5倍；触及/打开涨跌停；盘中量比≥3。</div>${meta(d.minutes)}`;
+  if(d.minutes&&d.minutes.errors&&Object.keys(d.minutes.errors).length) h+=`<div class="meta err">未取到分时：${esc(JSON.stringify(d.minutes.errors))}</div>`;
+  $('#main').innerHTML=h+'</div>';}
+async function addW(){const c=$('#wcode').value.trim(); try{const r=await api('/api/watchlist',{method:'POST',body:JSON.stringify({code:c})}); toast(r.exists?'已在自选中':`已添加 ${r.name}`); setTimeout(()=>render(true),2000); render(true);}catch(e){toast(e.message)}}
+async function delW(c){ if(!confirm('从自选移除 '+c+'？')) return; await api('/api/watchlist/'+c,{method:'DELETE'}); render(true);}
+
+/* ---------- 提醒 ---------- */
+const RT={price_ge:'价格 ≥',price_le:'价格 ≤',pct_ge:'涨幅 ≥',pct_le:'涨幅 ≤'};
+async function rAlerts(){
+  const d=await api('/api/alerts');
+  const perm=('Notification' in window)?Notification.permission:'unsupported';
+  setSticky(`<div class="line">提醒 ${d.rules.filter(r=>r.enabled).length} 条监控中</div><div class="sub">${esc(d.now)} · ${d.live?'交易时段':'非交易时段不触发'}</div>`);
+  let h=`<div class="card"><h2>通知设置</h2><div class="sub mut" style="font-size:13px">浏览器通知：<b>${{granted:'已允许',denied:'已拒绝（请在系统/浏览器设置中开启）',default:'未授权',unsupported:'此浏览器不支持（iPhone 需先“添加到主屏幕”）'}[perm]}</b></div>
+   <div class="row" style="margin-top:10px"><button class="btn" onclick="askPerm()">开启通知</button><button class="btn sec" onclick="testN()">测试（声音+震动）</button></div>
+   <div class="meta">提醒仅在本页/主屏 App 打开时推送。</div></div>`;
+  h+=`<div class="card"><h2>新建提醒</h2><div class="grid"><input id="rc" inputmode="numeric" maxlength="6" placeholder="6位代码">
+   <select id="rt">${Object.entries(RT).map(([k,v])=>`<option value="${k}">${v}${k.startsWith('pct')?'（%）':'（元）'}</option>`).join('')}</select>
+   <input id="rv" inputmode="decimal" placeholder="数值，如 9.5 或 -3"><label class="row" style="font-size:13px;min-height:44px"><input id="rr" type="checkbox" style="width:auto;min-height:22px"> 重复提醒</label></div>
+   <button class="btn" style="width:100%;margin-top:10px" onclick="addR()">添加提醒</button>
+   <div class="meta">仅交易时段且行情时间在3分钟内触发；后台约每10秒检查。</div></div>`;
+  h+=`<div class="card"><h2>我的提醒（${d.rules.length}）</h2>`;
+  h+=d.rules.length?d.rules.map(r=>`<div class="stock"><div><span class="nm">${esc(r.name)}</span> <span class="sub">${r.code}</span>
+     <div>${RT[r.type]} <b class="num">${r.value}${r.type.startsWith('pct')?'%':''}</b> ${r.repeat?'<span class="tag">重复</span>':''} ${r.enabled?'<span class="tag t-fqzy">监控中</span>':'<span class="tag">已停用</span>'}</div>
+     <div class="sub">现价 ${r.q?f(r.q.price):NA} ${r.q?pct(r.q.pct):''} · ${r.now_met===null?'未知':(r.now_met?'<b class="up">已满足</b>':'未满足')}</div></div>
+     <div class="px"><button class="btn sec sm" onclick="togR('${r.id}',${!r.enabled})">${r.enabled?'停用':'启用'}</button><br><button class="btn sec sm" style="margin-top:4px" onclick="delR('${r.id}')">删除</button></div></div>`).join(''):`<div class="empty">暂无提醒</div>`;
+  h+=meta(d.spot)+'</div>';
+  h+=`<div class="card"><h2>已触发记录</h2>`+(d.log.length?d.log.map(a=>`<div class="ev"><span class="t">${esc(a.at.slice(11,16))}</span><div>${esc(a.msg)}<div class="mut">${esc(a.at.slice(0,10))} · ${esc(a.data_time)}</div></div></div>`).join(''):`<div class="empty">暂无</div>`)+'</div>';
+  $('#main').innerHTML=h;}
+async function addR(){ try{await api('/api/rules',{method:'POST',body:JSON.stringify({code:$('#rc').value.trim(),type:$('#rt').value,value:$('#rv').value,repeat:$('#rr').checked})}); toast('已添加'); render(true);}catch(e){toast(e.message)}}
+async function delR(id){ if(!confirm('删除该提醒？'))return; await api('/api/rules/'+id,{method:'DELETE'}); render(true);}
+async function togR(id,en){ await api('/api/rules/'+id,{method:'PATCH',body:JSON.stringify({enabled:en})}); render(true);}
+
+/* ---------- 涨停 ---------- */
+let LSEG='zt', LSHOW=30;
+async function rLimit(){
+  const d=await api('/api/limitup'); const x=d.data||{};
+  const zt=x.zt, zb=x.zb, dt=x.dt;
+  const zbr=(zt&&zb&&(zt.length+zb.length))?(zb.length/(zt.length+zb.length)*100):null;
+  setSticky(`<div class="line">涨停 ${zt?zt.length:NA} · 炸板 ${zb?zb.length:NA} · 跌停 ${dt?dt.length:NA}</div><div class="sub">交易日 ${esc(x.date||'—')} · 炸板率 ${zbr===null?'未取到':zbr.toFixed(1)+'%'}</div>`);
+  let h=`<div class="card"><h2>涨停监控</h2>
+   <div class="grid g3"><div class="kv"><div class="k">涨停</div><div class="v up">${zt?zt.length:NA}</div></div>
+   <div class="kv"><div class="k">炸板</div><div class="v" style="color:var(--warn)">${zb?zb.length:NA}</div></div>
+   <div class="kv"><div class="k">跌停</div><div class="v dn">${dt?dt.length:NA}</div></div>
+   <div class="kv"><div class="k">炸板率</div><div class="v">${zbr===null?NA:zbr.toFixed(1)+'%'}</div></div>
+   <div class="kv"><div class="k">最高板</div><div class="v up">${zt&&zt.length?Math.max(...zt.map(r=>r.lb)):NA}</div></div>
+   <div class="kv"><div class="k">昨涨停今均</div><div class="v">${x.prev?pct(x.prev.avg_pct):NA}</div></div></div>
+   ${x.errors&&Object.keys(x.errors).length?`<div class="meta err">部分池未取到：${esc(JSON.stringify(x.errors))}</div>`:''}${meta(d)}</div>`;
+  const list=LSEG=='zt'?zt:LSEG=='zb'?zb:dt;
+  h+=`<div class="card"><div class="seg">${[['zt','涨停池'],['zb','炸板池'],['dt','跌停池']].map(s=>`<button class="${LSEG==s[0]?'on':''}" onclick="LSEG='${s[0]}';LSHOW=30;render(true)">${s[1]}</button>`).join('')}</div>`;
+  if(!list){ h+=`<div class="empty">未取到</div></div>`; $('#main').innerHTML=h; return; }
+  const show=list.slice(0,LSHOW);
+  if(LSEG=='zt') h+=`<div class="scroll"><table><tr><th>名称</th><th>连板</th><th>首封</th><th>封单</th><th>炸</th></tr>`+show.map(r=>`<tr><td><div class="n">${esc(r.name)}</div><div class="c">${r.code} · ${esc(r.industry)} · ${esc(r.stat)}</div></td><td class="up"><b>${r.lb}</b></td><td>${hm(r.first_seal).slice(0,5)}<div class="c">末 ${hm(r.last_seal).slice(0,5)}</div></td><td>${r.seal_yi}亿</td><td>${r.zb_times}</td></tr>`).join('')+'</table></div>';
+  if(LSEG=='zb') h+=`<div class="scroll"><table><tr><th>名称</th><th>涨幅</th><th>首封</th><th>炸</th><th>行业</th></tr>`+show.map(r=>`<tr><td><div class="n">${esc(r.name)}</div><div class="c">${r.code}</div></td><td>${pct(r.pct)}</td><td>${hm(r.first_seal).slice(0,5)}</td><td>${r.zb_times}</td><td>${esc(r.industry)}</td></tr>`).join('')+'</table></div>';
+  if(LSEG=='dt') h+=`<div class="scroll"><table><tr><th>名称</th><th>跌幅</th><th>连跌</th><th>开板</th><th>行业</th></tr>`+show.map(r=>`<tr><td><div class="n">${esc(r.name)}</div><div class="c">${r.code}</div></td><td>${pct(r.pct)}</td><td>${r.cont}</td><td>${r.open_times}</td><td>${esc(r.industry)}</td></tr>`).join('')+'</table></div>';
+  if(list.length>LSHOW) h+=`<button class="btn sec more" onclick="LSHOW+=30;render(true)">展开更多（${LSHOW}/${list.length}）</button>`;
+  h+=`<div class="meta">封单=封板资金（东财口径，非完整委托队列）</div></div>`;
+  $('#main').innerHTML=h;}
+
+/* ---------- 竞价 ---------- */
+let ASEG='w2s', ASHOW=40;
+const CONC={可建仓:'yes',只看不追:'watch',继续观察:'hold',暂不可建仓:'hold',不可建仓:'no',未取到:'na'};
+async function rAuction(){
+  const d=await api('/api/auction'); const x=d.data;
+  if(!x){ setSticky(''); $('#main').innerHTML=`<div class="card"><div class="empty">竞价数据未取到</div>${meta(d)}</div>`; return; }
+  const s=x.summary||{};
+  setSticky(`<div class="line">${esc(x.stage_mode||'—')} · 可建仓 ${s.can_buy??0} · 弱转强 ${s.w2s??0}</div>
+    <div class="sub">${x.replay?'开盘回放 '+x.day:'交易日 '+x.day} · 总仓 ${esc((x.position&&x.position.total)||'—')}</div>`);
+  let h=`<div class="card"><h2>集合竞价筛选</h2>`;
+  if(x.must_empty) h+=`<div class="banner">必须空仓：今日不做新建仓（情绪条件触发）</div>`;
+  h+=`<div class="note">竞价数据仅在 <b>09:25（北京时间）</b> 撮合后有效。${x.replay?`当前非竞价时段，展示最近交易日 <b>${x.day}</b> 开盘回放（首根分时口径）。`:(d.phase==='auction_done'?'当前为竞价结束时段（实时快照）。':'')}${x.note?' '+esc(x.note):''}</div>`;
+  h+=`<div class="one"><div class="t">${esc(x.tier||'—')} · ${esc(x.stage_mode||'—')}</div>
+    <div class="p">仓位 ${esc((x.position&&x.position.text)||'—')}<br>
+    启用买点：${esc((x.buy_points_active||[]).join('、')||'—')}<br>
+    ${x.buy_points_paused&&x.buy_points_paused.length?'暂停：'+esc(x.buy_points_paused.join('、')):''}</div></div>`;
+  h+=`<div class="grid g3"><div class="kv"><div class="k">候选</div><div class="v">${s.n??NA}</div></div>
+   <div class="kv"><div class="k">可建仓</div><div class="v up">${s.can_buy??NA}</div></div>
+   <div class="kv"><div class="k">弱转强</div><div class="v up">${s.w2s??NA}</div></div>
+   <div class="kv"><div class="k">只看不追</div><div class="v" style="color:var(--warn)">${s.watch_only??NA}</div></div>
+   <div class="kv"><div class="k">观察/暂缓</div><div class="v">${s.observe??NA}</div></div>
+   <div class="kv"><div class="k">昨涨停竞价均</div><div class="v">${pct(s.prev_zt_avg_pct)}</div></div></div>
+   <div class="meta">规则：高开2–5%且竞价额≥昨成交${x.amp_threshold_pct}%→弱转强；高开>7%或一字→只看不追；低开>3%→等分歧转一致（退潮期暂停建仓、标继续观察）。所属主线=行业涨停家数参考。</div>${meta(d)}</div>`;
+
+  const segs=[['w2s','弱转强'],['yes','可建仓'],['watch','只看不追'],['fqzy','等分歧'],['wl','自选'],['all','全部']];
+  h+=`<div class="card"><div class="seg">${segs.map(t=>`<button class="${ASEG==t[0]?'on':''}" onclick="ASEG='${t[0]}';ASHOW=40;render(true)">${t[1]}</button>`).join('')}</div>`;
+  let rows=x.rows.filter(r=>{
+    if(ASEG=='all') return true;
+    if(ASEG=='wl') return r.is_watchlist || (r.src||[]).includes('自选');
+    if(ASEG=='yes') return r.conclusion==='可建仓';
+    if(ASEG=='watch') return r.conclusion==='只看不追' || r.cls==='watch';
+    if(ASEG=='fqzy') return r.cls==='fqzy';
+    if(ASEG=='w2s') return r.cls==='w2s';
+    return true;
+  });
+  if(!rows.length){ h+=`<div class="empty">该筛选下无标的</div></div>`; $('#main').innerHTML=h; return; }
+  const show=rows.slice(0,ASHOW);
+  h+=show.map(r=>{
+    const cc=r.conclusion_cls||CONC[r.conclusion]||'na';
+    const amt=r.amount_wan==null?'未取到':(r.amount_wan>=10000?(r.amount_wan/1e4).toFixed(2)+'亿':Math.round(r.amount_wan)+'万');
+    return `<div class="acard ${cc}"><div class="hd"><div><div class="name">${esc(r.name)} <span class="c">${r.code}</span></div>
+      <div class="c">${esc((r.src||[]).join(' · '))}</div>
+      <div style="margin-top:4px"><span class="tag t-${r.cls}">${esc(r.tag)}</span>
+      <span class="tag t-${cc}">${esc(r.conclusion||'未取到')}</span>
+      ${r.buy_point&&r.buy_point!=='—'?'<span class="tag">'+esc(r.buy_point)+'</span>':''}</div></div>
+      <div class="pct ${cls(r.pct)}">${r.pct==null?'—':((r.pct>0?'+':'')+r.pct.toFixed(2)+'%')}</div></div>
+      <div class="grid2"><div class="cell"><div class="k">竞价价</div><div class="v">${r.price??'未取到'}</div></div>
+      <div class="cell"><div class="k">竞价额</div><div class="v">${amt}</div></div>
+      <div class="cell"><div class="k">占昨成交</div><div class="v">${r.ratio_pct==null?'未取到':r.ratio_pct.toFixed(2)+'%'}</div></div></div>
+      <div class="c" style="margin-top:6px">板块/主线：${esc(r.theme||r.industry||'未取到')} · 昨额 ${r.prev_amount_yi??'—'}亿</div>
+      <div class="reason">${esc(r.reason||'')}</div></div>`;
+  }).join('');
+  if(rows.length>ASHOW) h+=`<button class="btn sec more" onclick="ASHOW+=40;render(true)">展开更多（${ASHOW}/${rows.length}）</button>`;
+  h+=`<div class="meta">非 Level-2：无竞价未匹配量。结论按情绪阶段自动调整；不构成投资建议。</div></div>`;
+  $('#main').innerHTML=h;}
+
+/* ---------- 情绪 ---------- */
+async function rSent(){
+  const d=await api('/api/sentiment'); const s=d.sent, st=s.stats, ix=d.index.data, b=s.breadth, pos=s.position||{};
+  const tc={'冰点/退潮':'dn','修复':'','主升':'up'}[s.tier]||'';
+  setSticky(`<div class="line">${esc(s.one_line|| (s.tier+' · '+(s.stage_mode||'')))}</div>
+    <div class="sub">交易日 ${esc(s.date||'—')} · ${esc(d.phase_cn)}</div>`);
+  let h='';
+  if(s.must_empty) h+=`<div class="banner">必须空仓<br>${(s.must_empty_reasons||[]).map(esc).join('<br>')}</div>`;
+  h+=`<div class="one"><div class="t">${esc(s.one_line||'—')}</div><div class="p">${esc(s.why||'')}</div></div>`;
+  h+=`<div class="card"><h2>情绪档位 · 阶段模式</h2>
+   <div class="tier ${tc}" style="${s.tier=='修复'?'color:var(--warn)':''}">${esc(s.tier)}</div>
+   <div style="margin-top:6px;font-size:15px;font-weight:700">${esc(s.stage_mode||'—')}</div>
+   <div class="grid" style="margin-top:10px">
+     <div class="kv"><div class="k">总仓位上限</div><div class="v" style="font-size:20px">${esc(pos.total||'未取到')}</div></div>
+     <div class="kv"><div class="k">单票上限</div><div class="v" style="font-size:20px">${esc(pos.single||'未取到')}</div></div></div>
+   <div class="meta">${esc(pos.text||'')}${pos.max_hold!=null?' · 同时最多持有 '+pos.max_hold+' 只':''}</div>`;
+  if(s.tips&&s.tips.length) h+=s.tips.map(t=>`<div class="note" style="margin-top:8px">${esc(t)}</div>`).join('');
+  if(s.must_empty_unchecked&&s.must_empty_unchecked.length) h+=`<div class="meta err" style="margin-top:6px">${s.must_empty_unchecked.map(esc).join('<br>')}</div>`;
+  h+=`<div style="margin-top:10px"><b style="font-size:13px">启用买点</b><div style="margin-top:4px">${(s.buy_points_active||[]).map(x=>`<span class="tag t-w2s">${esc(x)}</span>`).join('')||NA}</div></div>`;
+  if(s.buy_points_paused&&s.buy_points_paused.length) h+=`<div style="margin-top:8px"><b style="font-size:13px">暂停买点</b><div style="margin-top:4px">${s.buy_points_paused.map(x=>`<span class="tag t-hold">${esc(x)}</span>`).join('')}</div></div>`;
+  for(const [k,L] of Object.entries(s.criteria||{})){ h+=`<details ${k==s.tier?'open':''} style="margin-top:8px"><summary>${k} 条件（满足 ${(L||[]).filter(c=>c.met).length}/${(L||[]).length}）</summary>`+(L||[]).map(c=>`<div class="crit"><span>${c.met===true?'<b class="ok">✓</b>':(c.met===false?'<span class="no">✗</span>':'<span class="mut">?</span>')} ${esc(c.label)}</span><span class="num">${c.value===null||c.value===undefined?NA:esc(c.value)}</span></div>`).join('')+'</details>';}
+  h+=`<div class="meta">判定顺序：主升硬性条件→修复→冰点/退潮（跌停条件或≥2项）→过渡。晋级率=昨涨停今仍涨停/昨涨停数。</div>${meta(d.limitup)}</div>`;
+
+  h+=`<div class="card"><h2>四大指数</h2><div class="grid">`+(ix&&ix.rows?ix.rows.map(r=>`<div class="kv"><div class="k">${esc(r.name)}</div><div class="v ${cls(r.pct)}">${f(r.price)}</div><div class="num">${pct(r.pct)} <span class="mut" style="font-size:11px">${f(r.amount_yi,0,'亿')}</span></div></div>`).join(''):`<div class="empty">未取到</div>`)+`</div>${meta(d.index,ix?' · 数据时间 '+esc(ix.data_time):'')}</div>`;
+
+  const t=ix&&ix.turnover_cmp;
+  h+=`<div class="card"><h2>市场全景</h2><div class="grid g3">
+   <div class="kv"><div class="k">上涨</div><div class="v up">${b&&b.up!=null?b.up:NA}</div></div><div class="kv"><div class="k">下跌</div><div class="v dn">${b&&b.down!=null?b.down:NA}</div></div><div class="kv"><div class="k">平盘</div><div class="v">${b&&b.flat!=null?b.flat:NA}</div></div>
+   <div class="kv" style="grid-column:span 2"><div class="k">沪深成交额</div><div class="v">${ix&&ix.turnover_yi!=null?ix.turnover_yi.toFixed(0)+'亿':NA}</div><div class="num" style="font-size:12px">${t&&t.chg_pct!=null?`较前日同时刻(${t.hhmm}) <span class="${cls(t.chg_pct)}">${t.chg_pct>0?'+':''}${t.chg_pct}%</span>`:'<span class="mut">同比未取到</span>'}</div></div>
+   <div class="kv"><div class="k">活跃度</div><div class="v" style="font-size:16px">${(b&&b.activity)||NA}</div></div>
+   <div class="kv"><div class="k">涨停</div><div class="v up">${st.zt??NA}</div></div><div class="kv"><div class="k">跌停</div><div class="v dn">${st.dt??NA}</div></div><div class="kv"><div class="k">炸板</div><div class="v" style="color:var(--warn)">${st.zb??NA}</div></div>
+   <div class="kv"><div class="k">炸板率</div><div class="v">${st.zb_rate==null?NA:st.zb_rate+'%'}</div></div><div class="kv"><div class="k">最高板</div><div class="v up">${st.max_lb??NA}</div></div><div class="kv"><div class="k">晋级率</div><div class="v">${st.promo_rate==null?NA:st.promo_rate+'%'}</div><div class="mut" style="font-size:11px">${st.prev_still??'—'}/${st.prev_n??'—'}</div></div>
+   <div class="kv"><div class="k">连板晋级率</div><div class="v">${st.lb_promo_rate==null?NA:st.lb_promo_rate+'%'}</div><div class="mut" style="font-size:11px">${st.lb_still??'—'}/${st.lb_n??'—'}</div></div>
+   <div class="kv"><div class="k">昨涨停今均</div><div class="v">${pct(st.prev_avg_pct)}</div></div>
+   <div class="kv"><div class="k">昨连板今均</div><div class="v">${pct(st.prev_lb_avg_pct)}</div></div></div>
+   <div class="meta">涨跌家数：${esc((b&&b.src)||'未取到')} · ${esc((b&&b.data_time)||'—')}</div>${meta(d.breadth)}</div>`;
+
+  h+=`<div class="card"><h2>连板天梯</h2>`;
+  if(s.ladder&&s.ladder.length){
+    h+=s.ladder.map(l=>{
+      const chips=l.stocks.map(x=>`<span class="chip">${esc(x.name)}<span class="mut"> ${esc(x.industry)}${x.zb_times?' 炸'+x.zb_times:''}</span></span>`).join('');
+      return `<div class="lad"><div class="b">${l.lb}板<div class="mut" style="font-size:11px;font-weight:400">${l.stocks.length}家</div></div><div class="s">${chips}</div></div>`;
+    }).join('');
+  } else h+=`<div class="empty">未取到</div>`;
+  h+=`${meta(d.limitup)}</div>`;
+  $('#main').innerHTML=h;}
+
+/* ---------- notifications + pull refresh ---------- */
+let SW=null; if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').then(r=>SW=r).catch(()=>{});}
+async function askPerm(){ if(!('Notification' in window)){toast('此浏览器不支持通知');return;} await Notification.requestPermission(); unlockAudio(); render(true);}
+let AC=null; function unlockAudio(){ try{AC=AC||new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended')AC.resume();}catch(e){} }
+document.addEventListener('click',unlockAudio,{once:false});
+function beep(){ try{unlockAudio(); const o=AC.createOscillator(),g=AC.createGain(); o.connect(g);g.connect(AC.destination); o.frequency.value=880; g.gain.setValueAtTime(.25,AC.currentTime); o.start(); o.frequency.setValueAtTime(660,AC.currentTime+.18); g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+.5); o.stop(AC.currentTime+.5);}catch(e){} }
+function toast(m){const t=$('#toast'); t.innerHTML=esc(m); t.style.display='block'; clearTimeout(window._tt); window._tt=setTimeout(()=>t.style.display='none',5000);}
+async function notify(title,body){ beep(); if(navigator.vibrate) navigator.vibrate([200,100,200]); toast(title+'：'+body);
+  if('Notification' in window && Notification.permission==='granted'){ try{ if(SW) await SW.showNotification(title,{body,icon:'/icon.png',tag:body.slice(0,40)}); else new Notification(title,{body,icon:'/icon.png'});}catch(e){} } }
+function testN(){ notify('测试提醒','声音+震动+系统通知'); }
+let SEEN=null;
+async function poll(){ try{ const p=await api('/api/poll');
+  $('#hdr-r').innerHTML=`${esc(p.phase_cn)}<br>${esc(p.now.slice(5,16))} 北京`;
+  const ids=new Set([...p.alerts.map(a=>'a'+a.id),...p.events.map(e=>'e'+e.id)]);
+  if(SEEN){ for(const a of p.alerts) if(!SEEN.has('a'+a.id)) notify('价格提醒',a.msg);
+            for(const e of p.events) if(!SEEN.has('e'+e.id) && e.src==='live') notify('异动 '+e.name,e.kind+' '+e.detail+' '+e.time); }
+  SEEN=SEEN?new Set([...SEEN,...ids]):ids; }catch(e){ $('#hdr-r').textContent='连接失败'; } }
+
+/* pull to refresh */
+let pullY=0, pulling=false;
+document.addEventListener('touchstart',e=>{ if(window.scrollY<=0){pulling=true;pullY=e.touches[0].clientY;} },{passive:true});
+document.addEventListener('touchmove',e=>{ if(!pulling) return; if(e.touches[0].clientY-pullY>70){ pulling=false; toast('刷新中…'); render(true); poll(); }},{passive:true});
+document.addEventListener('touchend',()=>{pulling=false;});
+
+nav(); render(true); poll();
+setInterval(poll,10000); setInterval(()=>{ if(!document.hidden) render(false); },20000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){poll();render(true);} });
+</script></body></html>

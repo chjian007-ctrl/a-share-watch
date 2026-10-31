@@ -1,0 +1,17 @@
+# Render Blueprint (backup platform). Free plan spins down after 15 min without inbound HTTP -> keep warm with cron-job.org (see DEPLOY.md).
+services:
+  - type: web
+    name: a-share-watch
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: ACCESS_TOKEN
+        sync: false          # entered in the Render dashboard, never committed
+      - key: WATCHLIST_SEED
+        sync: false
+      - key: DATA_DIR
+        value: /data
